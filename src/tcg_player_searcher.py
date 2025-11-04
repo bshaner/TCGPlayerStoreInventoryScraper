@@ -13,6 +13,7 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import time
+from datetime import date
 
 headless = ""
 sleep_time_between_pages = 2
@@ -369,7 +370,7 @@ def find_wanted_cards_dataframe(store_card_inventory, wanted_cards):
 
     return found_cards_df
 
-def write_to_excel(store_card_inventory, wanted_cards, found_cards_df):
+def write_to_excel(store_card_inventory, wanted_cards, found_cards_df, store_name):
     """Writes the store_card_inventory list, wanted_cards list, and found_cards_df dataframe to an Excel file called tcg_player_inventory_for_Store.xlsx
 
     Args:
@@ -381,7 +382,7 @@ def write_to_excel(store_card_inventory, wanted_cards, found_cards_df):
     cards_df = pd.DataFrame(data = store_card_inventory, columns = cards_header)
     wanted_cards_df = pd.DataFrame(data = wanted_cards, columns = wanted_cards_header)
  
-    writer = pd.ExcelWriter("tcg_player_inventory_for_store.xlsx", engine = "xlsxwriter", engine_kwargs={"options": {"strings_to_urls": False}})
+    writer = pd.ExcelWriter(store_name + "-" + str(date.today()) + ".xlsx", engine = "xlsxwriter", engine_kwargs={"options": {"strings_to_urls": False}})
 
     cards_df.to_excel(writer, index=False, sheet_name = "Store Inventory")
     wanted_cards_df.to_excel(writer, index=False, sheet_name = "Wanted Cards")
@@ -480,6 +481,7 @@ def main(argv):
     store_name = ""
     store_url = ""
     want_file_location = ""
+    store_id = ""
 
     try:
         opts, args = getopt.getopt(argv,"s:u:w:h",["store-name=","store-url=","want-file-location=","headless-flag="])
@@ -530,14 +532,17 @@ def main(argv):
         print("Store id: " + store_id)
     else:
         store_front_url = store_url
+        store_name = store_url.replace("https://","").replace(".tcgplayerpro.com/","")
 
+    print("Store Name: " +  store_name)
+    print("Store ID: " + store_id)
     print("Store URL: " + store_front_url)
     print("Total desired cards to search for: " + str(len(desired_cards)))
 
     store_card_inventory = scrape_store_by_sets(store_front_url)
     found_cards_in_inventory_df = find_wanted_cards_dataframe(store_card_inventory, desired_cards)
 
-    write_to_excel(store_card_inventory, desired_cards, found_cards_in_inventory_df)
+    write_to_excel(store_card_inventory, desired_cards, found_cards_in_inventory_df, store_name)
 
     end = time.time()
     elapsed_time = end - start
