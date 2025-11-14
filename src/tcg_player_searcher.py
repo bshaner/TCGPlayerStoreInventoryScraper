@@ -196,7 +196,6 @@ def add_inventory_details_to_wanted_card(wanted_card, found_cards_df):
     low_price_matches = matching_cards[matching_cards[InventoryColumn.PRICE.name] == matching_cards[InventoryColumn.PRICE.name].min()]
     # TODO: pick best condition instead of first available, need to parse out conditions and order
     best_match = low_price_matches.iloc[0]
-    best_match = matching_cards.loc[matching_cards[InventoryColumn.PRICE.name].idxmin()]
 
     treatment = best_match[InventoryColumn.TREATMENT.name]
     market_price = 0  # TODO: placeholder for market price
