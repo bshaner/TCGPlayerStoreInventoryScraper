@@ -37,6 +37,11 @@ class DesiredCardsColumn(Enum):
     NAME = 1
     SET_CODE = 2
     SET_NUMBER = 3
+    TREATMENT = 4
+    MARKET_PRICE = 5
+    CONDITION_LANGUAGE = 6
+    PRICE = 7
+    PRODUCT_URL = 8
 
     @DynamicClassAttribute
     def name(self):
@@ -79,7 +84,7 @@ def load_desired_cards_from_file(file_location):
             # Set number may indicate a prerelease card like "(PDSK) 23p"
             # Set number from Unstable may have a variant letter like "(UST) 82c"
             #           {qty}    {name} {set code}   {set number}             {foiling}
-            pattern = r"([0-9]+) (.*?)(?: \((\w+)\) ?((?:\w+-)?[0-9]+[a-z]?))?(?: \*F\*)?$"
+            pattern = r"([0-9]+) (.*?)(?: \((\w+)\) ?((?:\w+-)?[0-9]+[a-z]?))?(?: \*F\*)?\s*$"
             desired_card = re.findall(pattern, card)
             if desired_card:
                 desired_cards.append(desired_card[0])
@@ -173,6 +178,36 @@ def write_inventory_to_excel(store_card_inventory, store_name):
     writer.close()
 
 
+def add_inventory_details_to_wanted_card(wanted_card, found_cards_df):
+    """Adds inventory details from found_cards_df to the wanted_card list
+
+    Args:
+        wanted_card (list): list representing a wanted card
+        found_cards_df (dataframe): data frame of found cards, most likely from find_wanted_cards_dataframe
+        
+    Returns:
+        tuple: updated wanted_card list with inventory details appended
+    """
+    matching_cards = found_cards_df[found_cards_df[InventoryColumn.NAME.name] == wanted_card[DesiredCardsColumn.NAME.value]]
+    if matching_cards.empty:
+        return wanted_card
+    
+    # Choose card with lowest price, then best condition
+    low_price_matches = matching_cards[matching_cards[InventoryColumn.PRICE.name] == matching_cards[InventoryColumn.PRICE.name].min()]
+    # TODO: pick best condition instead of first available, need to parse out conditions and order
+    best_match = low_price_matches.iloc[0]
+    best_match = matching_cards.loc[matching_cards[InventoryColumn.PRICE.name].idxmin()]
+
+    treatment = best_match[InventoryColumn.TREATMENT.name]
+    market_price = 0  # TODO: placeholder for market price
+    condition = best_match[InventoryColumn.CONDITION_LANGUAGE.name]
+    price = best_match[InventoryColumn.PRICE.name]
+    url = best_match[InventoryColumn.PRODUCT_URL.name]
+
+    return wanted_card + (treatment, market_price, condition, price, url)
+
+
+
 def write_search_results_to_excel(store_card_inventory, wanted_cards, found_cards_df, store_name):
     """Writes a filtered store_card_inventory list, wanted_cards list, and found_cards_df dataframe to an Excel file
 
@@ -186,8 +221,12 @@ def write_search_results_to_excel(store_card_inventory, wanted_cards, found_card
     filtered_inventory = [item for item in store_card_inventory if item[InventoryColumn.NAME.value] in found_cards_df[InventoryColumn.NAME.name].values]
     filtered_inventory.sort()
 
+    wanted_cards_detail = [add_inventory_details_to_wanted_card(card, found_cards_df) for card in wanted_cards]
+    wanted_cards_df = pd.DataFrame(data = wanted_cards_detail, columns = DESIRED_CARDS_HEADER)
+
+    # TODO: add lowest available price from store for each wanted card
+    # TODO: add TCGPlayer market price for each wanted card
     cards_df = pd.DataFrame(data = filtered_inventory, columns = INVENTORY_HEADER)
-    wanted_cards_df = pd.DataFrame(data = wanted_cards, columns = DESIRED_CARDS_HEADER)
  
     writer = pd.ExcelWriter(store_name + "-" + str(date.today()) + ".results.xlsx", engine = "xlsxwriter", engine_kwargs={"options": {"strings_to_urls": False}})
 
@@ -234,7 +273,8 @@ def main(argv):
         # TODO: allow multiple store URLs
         print("\tbuylist is the optional file location for a list of card names (in a text file) that you're looking to find.")
         print("\tcached-results is an optional file location for previously scraped store results to use instead of scraping the store live")
-        # TODO: cache results in a directory so we can find them automatically
+        # TODO: cache results in a directory so we can find them automatically by store name?
+        # TODO: add argument for minimum card condition
         print("\theadless is an optional flag to run the scraper in headless mode")
         sys.exit(2)
 

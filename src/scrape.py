@@ -139,6 +139,7 @@ def scrape_store_page_contents_list_view(driver, url):
         for sku in card_skus:
             price = sku.find_element(By.CSS_SELECTOR, ".sku-list__price").text
             condition_language = sku.find_element(By.CSS_SELECTOR, ".sku-list__condition").text
+            # TODO: ^ split out "{Condition} {Foil} - {Language}"
             quantity = sku.find_element(By.CSS_SELECTOR, ".tcg-quantity-selector__max-available").text.replace("of ", "")
 
             card = [name, treatment, name_without_treatment, set, rarity, quantity, condition_language, price, image_url, product_url]
