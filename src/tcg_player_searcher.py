@@ -77,8 +77,9 @@ def load_desired_cards_from_file(file_location):
         for card in cards:
             # Set number for The List will prefix the original set code like "(PLST) EMA-76"
             # Set number may indicate a prerelease card like "(PDSK) 23p"
+            # Set number from Unstable may have a variant letter like "(UST) 82c"
             #           {qty}    {name} {set code}   {set number}             {foiling}
-            pattern = r"([0-9]+) (.*?)(?: \((\w+)\))?(?: ((?:\w+-)?[0-9]+p?))?(?: \*F\*)?$"
+            pattern = r"([0-9]+) (.*?)(?: \((\w+)\) ?((?:\w+-)?[0-9]+[a-z]?))?(?: \*F\*)?$"
             desired_card = re.findall(pattern, card)
             if desired_card:
                 desired_cards.append(desired_card[0])
