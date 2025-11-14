@@ -172,3 +172,7 @@ cython_debug/
 
 # Ignore generated constants file
 constants.py
+
+# Input/results files
+*.xlsx
+*.txt
